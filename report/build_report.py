@@ -25,6 +25,7 @@ OLD_TITLE = "Employee Management System using AWS Elastic Beanstalk and AWS SQL 
 FONT = "Times New Roman"
 APP_URL = "https://main.dubqxztshiysh.amplifyapp.com"
 REPO_URL = "https://github.com/17mohak/vaanisetu"
+STUDENTS = [("Mohak Mandwani", "2406506")]
 
 
 # ------------------------------------------------------------------ helpers
@@ -59,6 +60,21 @@ def replace_title(doc):
                     keep_after = r.text[max(0, start + len(OLD_TITLE) - pos):]
                     r.text = keep_before + (TITLE if pos <= start < end else "") + keep_after
                 pos = end
+
+
+def set_students(doc):
+    """Fill the 'Student NameN / App ID' lines (cover and certificate) and drop unused ones."""
+    for p in list(doc.paragraphs):
+        m = re.match(r"Student Name(\d)", p.text.strip())
+        if not m:
+            continue
+        idx = int(m.group(1)) - 1
+        if idx < len(STUDENTS):
+            runs = p.runs
+            runs[0].text = STUDENTS[idx][0]
+            runs[-1].text = STUDENTS[idx][1]
+        else:
+            p._p.getparent().remove(p._p)
 
 
 def tighten_cover(doc):
@@ -263,6 +279,7 @@ def page_break(doc):
 def build(template, output):
     doc = Document(template)
     replace_title(doc)
+    set_students(doc)
     tighten_cover(doc)
     update_contents(doc)
 

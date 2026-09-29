@@ -69,16 +69,16 @@ function shot(slide, file, x, y, w, ratio = 784 / 1540) {
     s.addText("An AI-powered multilingual document reader built on AWS", { x: 0.6, y: 2.1, w: 6.5, h: 0.5,
       fontFace: BODY, fontSize: 18, color: "E5E7EB", margin: 0, isTextBox: true });
     s.addText("Amazon Bedrock  ·  Amazon Polly  ·  Amazon Rekognition  ·  AWS Lambda  ·  API Gateway  ·  S3  ·  DynamoDB  ·  Amplify",
-      { x: 0.6, y: 2.65, w: 8.8, h: 0.35, fontFace: BODY, fontSize: 11, color: "9CA3AF", margin: 0, isTextBox: true });
+      { x: 0.6, y: 2.65, w: 6.4, h: 0.55, fontFace: BODY, fontSize: 11, color: "9CA3AF", valign: "top", margin: 0, isTextBox: true });
     s.addText([
       { text: "Presented by: ", options: { bold: true, color: C.white } },
-      { text: "Student Name1 (App ID)  ·  Student Name2 (App ID)  ·  Student Name3 (App ID)", options: { breakLine: true } },
+      { text: "Mohak Mandwani (App ID: 2406506)", options: { breakLine: true } },
       { text: "Supervisor: ", options: { bold: true, color: C.white } },
       { text: "Dr. Kunal Meher (Assistant Professor)", options: { breakLine: true } },
       { text: "Cloud Application Development (CAP 303)  ·  TY B.Tech Sem V  ·  uGDX School of Technology  ·  AY 2026-27" },
     ], { x: 0.6, y: 3.7, w: 8.8, h: 1.1, fontFace: BODY, fontSize: 12, color: "D1D5DB", margin: 0,
       paraSpaceAfter: 4, isTextBox: true });
-    s.addNotes("Introduce the team and the project. VaaniSetu means 'bridge of voice'. It turns a photo of any document into a spoken explanation in the listener's own language, built entirely on serverless AWS services.");
+    s.addNotes("Introduce yourself and the project. VaaniSetu means 'bridge of voice'. It turns a photo of any document into a spoken explanation in the listener's own language, built entirely on serverless AWS services.");
   }
 
   // 2. Problem -------------------------------------------------------------
@@ -165,7 +165,7 @@ function shot(slide, file, x, y, w, ratio = 784 / 1540) {
     s.addText("API Gateway (HTTP API) → AWS Lambda orchestrates every step  ·  IAM least-privilege role  ·  CloudWatch logs",
       { x: 0.5, y: 4.5, w: 9, h: 0.35, fontFace: BODY, fontSize: 12, color: C.ink2, align: "center", margin: 0, isTextBox: true });
     footer(s, n);
-    s.addNotes("Walk through a single request. The photo never passes through the API: it goes straight to S3 with a pre-signed URL, which avoids API payload limits. Rekognition is a cheap gate so we do not pay for an AI call on a blank photo. Bedrock does the heavy lifting in one multimodal call. Polly speaks it, and DynamoDB stores the record.");
+    s.addNotes("Walk through a single request. The photo never passes through the API: it goes straight to S3 with a pre-signed URL, which avoids API payload limits. Rekognition is a cheap gate so there is no charge for an AI call on a blank photo. Bedrock does the heavy lifting in one multimodal call. Polly speaks it, and DynamoDB stores the record.");
   }
 
   // 6. Cloud services grid --------------------------------------------------
@@ -318,7 +318,7 @@ function shot(slide, file, x, y, w, ratio = 784 / 1540) {
   // 13. Challenges ----------------------------------------------------------------
   {
     const s = pres.addSlide(); n++;
-    title(s, "Challenges we solved");
+    title(s, "Challenges solved");
     const rows = [
       ["Textract, Translate & Comprehend blocked on the AWS Free plan", "One multimodal Bedrock model reads, translates and summarises in a single call"],
       ["CloudFront needs account verification for new accounts", "Hosted the frontend on AWS Amplify Hosting (HTTPS + CDN)"],
@@ -326,7 +326,7 @@ function shot(slide, file, x, y, w, ratio = 784 / 1540) {
       ["API Gateway's 29-second limit", "Direct-to-S3 uploads and a pipeline that finishes in about 10 seconds"],
     ];
     s.addText("Challenge", { x: 0.5, y: 1.1, w: 4.2, h: 0.35, fontFace: HEAD, fontSize: 14, bold: true, color: C.accent, margin: 0, isTextBox: true });
-    s.addText("How we solved it", { x: 5.3, y: 1.1, w: 4.2, h: 0.35, fontFace: HEAD, fontSize: 14, bold: true, color: C.teal, margin: 0, isTextBox: true });
+    s.addText("How it was solved", { x: 5.3, y: 1.1, w: 4.2, h: 0.35, fontFace: HEAD, fontSize: 14, bold: true, color: C.teal, margin: 0, isTextBox: true });
     for (let i = 0; i < rows.length; i++) {
       const y = 1.55 + i * 0.88;
       s.addShape("roundRect", { x: 0.5, y, w: 4.3, h: 0.75, rectRadius: 0.08, fill: { color: C.card }, line: { type: "none" } });
@@ -349,7 +349,7 @@ function shot(slide, file, x, y, w, ratio = 784 / 1540) {
       "Secure, cheap to run, and deployed with one script"];
     const fut = ["Multi-page PDFs with SQS / Step Functions", "More Indian-language voices and a spoken Q&A mode",
       "Private per-user history with Amazon Cognito", "WhatsApp / IVR channel for feature phones"];
-    s.addText("What we achieved", { x: 0.5, y: 1.3, w: 4.3, h: 0.35, fontFace: HEAD, fontSize: 16, bold: true, color: "F4A57C", margin: 0, isTextBox: true });
+    s.addText("What was achieved", { x: 0.5, y: 1.3, w: 4.3, h: 0.35, fontFace: HEAD, fontSize: 16, bold: true, color: "F4A57C", margin: 0, isTextBox: true });
     s.addText(concl.map((t, i) => ({ text: t, options: { bullet: true, breakLine: i < concl.length - 1 } })),
       { x: 0.5, y: 1.75, w: 4.3, h: 2.6, fontFace: BODY, fontSize: 13.5, color: "E5E7EB", paraSpaceAfter: 10, valign: "top", margin: 0, isTextBox: true });
     s.addText("What comes next", { x: 5.3, y: 1.3, w: 4.2, h: 0.35, fontFace: HEAD, fontSize: 16, bold: true, color: "5EEAD4", margin: 0, isTextBox: true });
