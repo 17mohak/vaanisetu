@@ -33,6 +33,8 @@ const drop = $("drop");
 ["dragleave", "drop"].forEach((t) => drop.addEventListener(t, () => drop.classList.remove("drag")));
 drop.addEventListener("drop", (e) => { e.preventDefault(); e.dataTransfer.files[0] && useImage(e.dataTransfer.files[0]); });
 document.querySelectorAll("[data-sample]").forEach((b) => b.addEventListener("click", async () => {
+  imageBlob = null;
+  $("go").disabled = true;
   const res = await fetch(b.dataset.sample);
   useImage(await res.blob());
 }));
@@ -40,6 +42,9 @@ document.querySelectorAll("[data-sample]").forEach((b) => b.addEventListener("cl
 async function useImage(file) {
   hideError();
   if (!/image\/(jpeg|png)/.test(file.type)) return showError("Please choose a JPEG or PNG photo.");
+  // Block processing until the new image is ready so the previous one is never sent
+  imageBlob = null;
+  $("go").disabled = true;
   imageBlob = await downscale(file, 1800);
   $("preview").src = URL.createObjectURL(imageBlob);
   $("preview").hidden = false;
