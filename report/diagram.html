@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>
+body{margin:0;background:#fff;font-family:"Segoe UI",Arial,sans-serif}
+</style></head><body>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#37474f"/></marker>
+    <style>
+      .t{font:600 22px "Segoe UI",Arial;fill:#1b1b1b}
+      .s{font:16px "Segoe UI",Arial;fill:#455a64}
+      .n{font:700 14px "Segoe UI",Arial;fill:#fff}
+      .l{font:italic 15px "Segoe UI",Arial;fill:#37474f}
+      .ln{stroke:#37474f;stroke-width:2.2;fill:none;marker-end:url(#a)}
+      .dash{stroke:#90a4ae;stroke-width:2;fill:none;stroke-dasharray:7 6}
+    </style>
+  </defs>
+  <text x="800" y="44" text-anchor="middle" style="font:700 30px 'Segoe UI',Arial;fill:#1b1b1b">VaaniSetu: System Block Diagram (AWS, ap-south-1 Mumbai)</text>
+
+  <!-- AWS cloud boundary -->
+  <rect x="330" y="80" width="1245" height="790" rx="18" fill="#fafafa" stroke="#232f3e" stroke-width="2.5" stroke-dasharray="10 6"/>
+  <text x="352" y="112" style="font:700 18px 'Segoe UI';fill:#232f3e">AWS Cloud</text>
+
+  <!-- user -->
+  <rect x="30" y="360" width="250" height="150" rx="14" fill="#fff" stroke="#546e7a" stroke-width="2"/>
+  <circle cx="155" cy="398" r="20" fill="#546e7a"/><rect x="125" y="422" width="60" height="28" rx="14" fill="#546e7a"/>
+  <text x="155" y="478" text-anchor="middle" class="t">User</text>
+  <text x="155" y="500" text-anchor="middle" class="s">Browser / phone camera</text>
+
+  <!-- Amplify -->
+  <rect x="400" y="140" width="290" height="120" rx="14" fill="#fff" stroke="#dd344c" stroke-width="2.5"/>
+  <rect x="400" y="140" width="290" height="30" rx="14" fill="#dd344c"/><rect x="400" y="156" width="290" height="14" fill="#dd344c"/>
+  <text x="545" y="161" text-anchor="middle" class="n">FRONTEND HOSTING</text>
+  <text x="545" y="205" text-anchor="middle" class="t">AWS Amplify Hosting</text>
+  <text x="545" y="235" text-anchor="middle" class="s">HTML · CSS · JavaScript (HTTPS)</text>
+
+  <!-- API GW -->
+  <rect x="400" y="375" width="290" height="120" rx="14" fill="#fff" stroke="#8c4fff" stroke-width="2.5"/>
+  <rect x="400" y="375" width="290" height="30" rx="14" fill="#8c4fff"/><rect x="400" y="391" width="290" height="14" fill="#8c4fff"/>
+  <text x="545" y="396" text-anchor="middle" class="n">REST ENTRY POINT</text>
+  <text x="545" y="440" text-anchor="middle" class="t">Amazon API Gateway</text>
+  <text x="545" y="470" text-anchor="middle" class="s">HTTP API · CORS · throttling</text>
+
+  <!-- Lambda -->
+  <rect x="790" y="355" width="300" height="160" rx="14" fill="#fff" stroke="#ed7100" stroke-width="3"/>
+  <rect x="790" y="355" width="300" height="30" rx="14" fill="#ed7100"/><rect x="790" y="371" width="300" height="14" fill="#ed7100"/>
+  <text x="940" y="376" text-anchor="middle" class="n">COMPUTE (SERVERLESS)</text>
+  <text x="940" y="420" text-anchor="middle" class="t">AWS Lambda</text>
+  <text x="940" y="448" text-anchor="middle" class="s">Python 3.12 · vaanisetu-api</text>
+  <text x="940" y="472" text-anchor="middle" class="s">/upload-url · /process · /history</text>
+  <text x="940" y="496" text-anchor="middle" class="s">orchestrates the AI pipeline</text>
+
+  <!-- S3 -->
+  <rect x="790" y="130" width="300" height="130" rx="14" fill="#fff" stroke="#7aa116" stroke-width="2.5"/>
+  <rect x="790" y="130" width="300" height="30" rx="14" fill="#7aa116"/><rect x="790" y="146" width="300" height="14" fill="#7aa116"/>
+  <text x="940" y="151" text-anchor="middle" class="n">OBJECT STORAGE</text>
+  <text x="940" y="195" text-anchor="middle" class="t">Amazon S3</text>
+  <text x="940" y="222" text-anchor="middle" class="s">uploads/ (photos) · audio/ (MP3)</text>
+  <text x="940" y="245" text-anchor="middle" class="s">private, SSE, pre-signed URLs</text>
+
+  <!-- right column AI -->
+  <g>
+    <rect x="1210" y="130" width="330" height="120" rx="14" fill="#fff" stroke="#01a88d" stroke-width="2.5"/>
+    <rect x="1210" y="130" width="330" height="30" rx="14" fill="#01a88d"/><rect x="1210" y="146" width="330" height="14" fill="#01a88d"/>
+    <text x="1375" y="151" text-anchor="middle" class="n">① COMPUTER VISION</text>
+    <text x="1375" y="193" text-anchor="middle" class="t">Amazon Rekognition</text>
+    <text x="1375" y="222" text-anchor="middle" class="s">DetectText: is there readable text?</text>
+
+    <rect x="1210" y="290" width="330" height="120" rx="14" fill="#fff" stroke="#01a88d" stroke-width="2.5"/>
+    <rect x="1210" y="290" width="330" height="30" rx="14" fill="#01a88d"/><rect x="1210" y="306" width="330" height="14" fill="#01a88d"/>
+    <text x="1375" y="311" text-anchor="middle" class="n">② GENERATIVE AI</text>
+    <text x="1375" y="353" text-anchor="middle" class="t">Amazon Bedrock</text>
+    <text x="1375" y="382" text-anchor="middle" class="s">Amazon Nova 2 Lite: read · explain · translate</text>
+
+    <rect x="1210" y="450" width="330" height="120" rx="14" fill="#fff" stroke="#01a88d" stroke-width="2.5"/>
+    <rect x="1210" y="450" width="330" height="30" rx="14" fill="#01a88d"/><rect x="1210" y="466" width="330" height="14" fill="#01a88d"/>
+    <text x="1375" y="471" text-anchor="middle" class="n">③ TEXT-TO-SPEECH</text>
+    <text x="1375" y="513" text-anchor="middle" class="t">Amazon Polly</text>
+    <text x="1375" y="542" text-anchor="middle" class="s">Neural voices · 7 languages → MP3</text>
+
+    <rect x="1210" y="610" width="330" height="120" rx="14" fill="#fff" stroke="#c925d1" stroke-width="2.5"/>
+    <rect x="1210" y="610" width="330" height="30" rx="14" fill="#c925d1"/><rect x="1210" y="626" width="330" height="14" fill="#c925d1"/>
+    <text x="1375" y="631" text-anchor="middle" class="n">④ NoSQL DATABASE</text>
+    <text x="1375" y="673" text-anchor="middle" class="t">Amazon DynamoDB</text>
+    <text x="1375" y="702" text-anchor="middle" class="s">vaanisetu-documents (history)</text>
+  </g>
+
+  <!-- security / monitoring -->
+  <rect x="400" y="640" width="290" height="110" rx="14" fill="#fff" stroke="#dd344c" stroke-width="2.5"/>
+  <text x="545" y="685" text-anchor="middle" class="t">AWS IAM</text>
+  <text x="545" y="713" text-anchor="middle" class="s">least-privilege Lambda role</text>
+  <rect x="790" y="640" width="300" height="110" rx="14" fill="#fff" stroke="#e7157b" stroke-width="2.5"/>
+  <text x="940" y="685" text-anchor="middle" class="t">Amazon CloudWatch</text>
+  <text x="940" y="713" text-anchor="middle" class="s">Lambda logs &amp; metrics</text>
+
+  <!-- arrows -->
+  <path class="ln" d="M200 360 L200 200 L396 200"/>
+  <text x="210" y="190" class="l">1. load web app</text>
+  <path class="ln" d="M280 435 L396 435"/>
+  <text x="290" y="425" class="l">2. REST calls</text>
+  <path class="ln" d="M690 435 L786 435"/>
+  <text x="700" y="425" class="l">invoke</text>
+  <path class="ln" d="M180 360 C180 90, 760 90, 870 126"/>
+  <text x="430" y="104" class="l">3. PUT photo (pre-signed URL)</text>
+  <path class="ln" d="M1000 355 L1000 264"/>
+  <text x="1010" y="315" class="l">read photo / save MP3</text>
+  <path class="ln" d="M1090 390 C1150 390, 1150 190, 1206 190"/>
+  <path class="ln" d="M1090 420 C1160 420, 1160 350, 1206 350"/>
+  <path class="ln" d="M1090 460 C1160 460, 1160 510, 1206 510"/>
+  <path class="ln" d="M1090 490 C1150 490, 1150 670, 1206 670"/>
+  <path class="dash" d="M690 695 L786 695"/>
+  <path class="dash" d="M545 640 L545 580 L860 580 L860 519"/>
+  <path class="dash" d="M1000 640 L1000 519"/>
+  <text x="560" y="600" class="l">permissions</text>
+  <text x="1010" y="590" class="l">logs</text>
+
+  <!-- legend -->
+  <text x="360" y="835" class="s">Flow: photo → S3 → Rekognition (text check) → Bedrock (understand + translate) → Polly (speech) → S3 + DynamoDB → audio played in browser</text>
+</svg>
+</body></html>
