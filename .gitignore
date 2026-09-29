@@ -5,3 +5,4 @@ backend/function.zip
 frontend/config.js
 __pycache__/
 *.pyc
+report/.frontpages.docx
