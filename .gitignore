@@ -1,0 +1,7 @@
+# build output
+infra/.build/
+backend/function.zip
+# generated at deploy time from config.template.js
+frontend/config.js
+__pycache__/
+*.pyc
