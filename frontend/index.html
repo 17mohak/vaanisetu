@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VaaniSetu | AI Document Reader</title>
+  <meta name="description" content="Photograph any document and hear it explained in your language.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&family=Noto+Sans+Devanagari:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23c2410c'/><path d='M9 12v8M13 9v14M17 12v8M21 14v4' stroke='white' stroke-width='2.5' stroke-linecap='round'/></svg>">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <a class="brand" href="#" aria-label="VaaniSetu home">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        <span>Vaani<b>Setu</b></span>
+      </a>
+      <nav aria-label="Primary">
+        <a href="#read">Read a document</a>
+        <a href="#history">History</a>
+        <a href="#how">How it works</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero wrap">
+      <p class="eyebrow">वाणी सेतु · a bridge of voice</p>
+      <h1>Any document, <em>explained aloud</em> in your language.</h1>
+      <p class="lede">Photograph a prescription, bill, notice or form. VaaniSetu reads it, explains what it means and what you need to do, then speaks it to you.</p>
+    </section>
+
+    <section id="read" class="wrap reader" aria-labelledby="read-h">
+      <div class="panel input-panel">
+        <h2 id="read-h">1 · Choose a document</h2>
+        <label class="drop" id="drop">
+          <input type="file" id="file" accept="image/jpeg,image/png" capture="environment">
+          <img id="preview" alt="" hidden>
+          <span class="drop-text" id="dropText">
+            <strong>Tap to take a photo</strong> or drop an image here
+            <small>JPEG or PNG · the page is auto-resized before upload</small>
+          </span>
+        </label>
+        <div class="samples">
+          <span>Or try a sample:</span>
+          <button type="button" data-sample="samples/prescription.jpg">Prescription</button>
+          <button type="button" data-sample="samples/electricity-bill.jpg">Electricity bill</button>
+          <button type="button" data-sample="samples/exam-notice.jpg">College notice</button>
+        </div>
+
+        <h2>2 · Listen in</h2>
+        <div class="langs" role="radiogroup" aria-label="Output language" id="langs"></div>
+
+        <button class="go" id="go" disabled>
+          <span>Read it to me</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+        <p class="error" id="error" role="alert" hidden></p>
+      </div>
+
+      <div class="panel output-panel" aria-live="polite">
+        <ol class="pipeline" id="pipeline">
+          <li data-step="upload"><b>Amazon S3</b><span>Secure upload</span></li>
+          <li data-step="rekognition"><b>Rekognition</b><span>Text check</span></li>
+          <li data-step="bedrock"><b>Bedrock · Nova</b><span>Understand &amp; translate</span></li>
+          <li data-step="polly"><b>Polly</b><span>Neural speech</span></li>
+          <li data-step="dynamo"><b>DynamoDB</b><span>Saved</span></li>
+        </ol>
+
+        <div class="empty" id="empty">
+          <div class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <p>Your explanation will appear and play here.</p>
+        </div>
+
+        <article class="result" id="result" hidden>
+          <div class="result-head">
+            <span class="badge" id="rType"></span>
+            <span class="meta" id="rMeta"></span>
+          </div>
+          <h3 id="rTitle"></h3>
+          <audio id="rAudio" controls preload="auto"></audio>
+          <p class="summary" id="rSummary"></p>
+          <div class="cols">
+            <div><h4>Key points</h4><ul id="rPoints"></ul></div>
+            <div id="rActionsWrap"><h4>What you need to do</h4><ul class="actions" id="rActions"></ul></div>
+          </div>
+          <details>
+            <summary>Original text read from the photo</summary>
+            <pre id="rText"></pre>
+          </details>
+          <div class="timings" id="rTimings"></div>
+        </article>
+      </div>
+    </section>
+
+    <section id="history" class="wrap history" aria-labelledby="hist-h">
+      <div class="section-head">
+        <h2 id="hist-h">Recently read</h2>
+        <button type="button" class="link" id="refresh">Refresh</button>
+      </div>
+      <div class="grid" id="historyGrid"><p class="muted">Loading…</p></div>
+    </section>
+
+    <section id="how" class="wrap how" aria-labelledby="how-h">
+      <h2 id="how-h">How it works on AWS</h2>
+      <div class="steps">
+        <div><span>01</span><h3>Upload</h3><p>The browser gets a pre-signed URL from <b>API Gateway → Lambda</b> and uploads the photo straight to a private <b>S3</b> bucket.</p></div>
+        <div><span>02</span><h3>Verify</h3><p><b>Amazon Rekognition</b> checks the photo really contains printed text before any AI cost is spent.</p></div>
+        <div><span>03</span><h3>Understand</h3><p><b>Amazon Nova on Bedrock</b> transcribes the page, works out what it means and writes a plain explanation in your language.</p></div>
+        <div><span>04</span><h3>Speak</h3><p><b>Amazon Polly</b> neural voices turn the explanation into natural speech, stored in S3 and logged in <b>DynamoDB</b>.</p></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wrap footer">
+    <p>VaaniSetu · Cloud Application Development (CAP 303) mini-project · Served by Amazon CloudFront from Amazon S3</p>
+  </footer>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
