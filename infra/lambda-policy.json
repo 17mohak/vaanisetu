@@ -1,0 +1,14 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {"Sid": "MediaBucket", "Effect": "Allow", "Action": ["s3:GetObject", "s3:PutObject"],
+     "Resource": "arn:aws:s3:::__MEDIA__/*"},
+    {"Sid": "DocumentsTable", "Effect": "Allow", "Action": ["dynamodb:PutItem", "dynamodb:Query"],
+     "Resource": "arn:aws:dynamodb:ap-south-1:__ACCOUNT__:table/__TABLE__"},
+    {"Sid": "TextDetection", "Effect": "Allow", "Action": "rekognition:DetectText", "Resource": "*"},
+    {"Sid": "SpeechSynthesis", "Effect": "Allow", "Action": "polly:SynthesizeSpeech", "Resource": "*"},
+    {"Sid": "NovaOnBedrock", "Effect": "Allow", "Action": "bedrock:InvokeModel",
+     "Resource": ["arn:aws:bedrock:*:__ACCOUNT__:inference-profile/global.amazon.nova-2-lite*",
+                  "arn:aws:bedrock:*::foundation-model/amazon.nova-2-lite*"]}
+  ]
+}
