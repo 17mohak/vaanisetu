@@ -1,123 +1,143 @@
 #!/usr/bin/env bash
-# VaaniSetu - provisions all AWS resources with the AWS CLI (region ap-south-1)
+# VaaniSetu - provisions and deploys everything on Google Cloud.
+# Run from Google Cloud Shell (gcloud is pre-installed and signed in):
+#   git clone https://github.com/17mohak/vaanisetu && cd vaanisetu && bash infra/deploy.sh
+# Re-runnable. Optional: PROJECT=<existing-project-id> bash infra/deploy.sh
 set -euo pipefail
-export AWS_REGION=ap-south-1 AWS_PAGER=""
-ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
-MEDIA=vaanisetu-media-$ACCOUNT
-TABLE=vaanisetu-documents
-ROLE=vaanisetu-lambda-role
+
+REGION=asia-south1            # Mumbai: function, storage, Firestore
+GW_REGION=asia-northeast1     # closest region where API Gateway is offered
+HERE=$(cd "$(dirname "$0")" && pwd)
+ROOT=$(cd "$HERE/.." && pwd)
+TMP=$(mktemp -d)
+
+# ------------------------------------------------------------------ project & billing
+PROJECT=${PROJECT:-$(gcloud config get-value project 2>/dev/null || true)}
+if [ -z "$PROJECT" ] || [ "$PROJECT" = "(unset)" ]; then
+  PROJECT="vaanisetu-$(date +%s | tail -c 7)"
+  echo "== Creating project $PROJECT"
+  gcloud projects create "$PROJECT" --name="VaaniSetu"
+fi
+gcloud config set project "$PROJECT" >/dev/null
+if [ "$(gcloud billing projects describe "$PROJECT" --format='value(billingEnabled)')" != "True" ]; then
+  BILLING=$(gcloud billing accounts list --filter=open=true --format='value(name)' --limit=1)
+  [ -n "$BILLING" ] || { echo "No open billing account. Start the free trial in the console first."; exit 1; }
+  echo "== Linking billing account $BILLING"
+  gcloud billing projects link "$PROJECT" --billing-account="$BILLING"
+fi
+PROJECT_NUMBER=$(gcloud projects describe "$PROJECT" --format='value(projectNumber)')
+
+echo "== Enabling APIs"
+gcloud services enable \
+  cloudfunctions.googleapis.com run.googleapis.com cloudbuild.googleapis.com \
+  artifactregistry.googleapis.com storage.googleapis.com firestore.googleapis.com \
+  vision.googleapis.com texttospeech.googleapis.com aiplatform.googleapis.com \
+  apigateway.googleapis.com servicemanagement.googleapis.com servicecontrol.googleapis.com \
+  iamcredentials.googleapis.com logging.googleapis.com billingbudgets.googleapis.com
+
+MEDIA=vaanisetu-media-$PROJECT
+WEB=vaanisetu-web-$PROJECT
 FN=vaanisetu-api
-HERE=$(cd "$(dirname "$0")" && pwd -W)
-TMP="$HERE/.build"; mkdir -p "$TMP"
+FN_SA=vaanisetu-fn@$PROJECT.iam.gserviceaccount.com
+GW_SA=vaanisetu-gateway@$PROJECT.iam.gserviceaccount.com
+BUILD_SA=vaanisetu-build@$PROJECT.iam.gserviceaccount.com
 
-echo "== S3 bucket"
-for b in $MEDIA; do
-  aws s3api head-bucket --bucket $b 2>/dev/null || aws s3api create-bucket --bucket $b \
-    --create-bucket-configuration LocationConstraint=$AWS_REGION >/dev/null
-  aws s3api put-public-access-block --bucket $b --public-access-block-configuration \
-    BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
-  aws s3api put-bucket-encryption --bucket $b --server-side-encryption-configuration \
-    '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
+# ------------------------------------------------------------------ storage
+echo "== Cloud Storage"
+gcloud storage buckets describe "gs://$MEDIA" >/dev/null 2>&1 || gcloud storage buckets create "gs://$MEDIA" \
+  --location="$REGION" --uniform-bucket-level-access --public-access-prevention
+cat > "$TMP/cors.json" <<'JSON'
+[{"origin": ["*"], "method": ["PUT", "GET"], "responseHeader": ["Content-Type"], "maxAgeSeconds": 3000}]
+JSON
+cat > "$TMP/lifecycle.json" <<'JSON'
+{"rule": [{"action": {"type": "Delete"}, "condition": {"age": 30, "matchesPrefix": ["uploads/"]}}]}
+JSON
+gcloud storage buckets update "gs://$MEDIA" --cors-file="$TMP/cors.json" --lifecycle-file="$TMP/lifecycle.json"
+
+echo "== Firestore"
+gcloud firestore databases describe --database='(default)' >/dev/null 2>&1 || \
+  gcloud firestore databases create --location="$REGION" --type=firestore-native
+
+# ------------------------------------------------------------------ IAM (least privilege)
+echo "== Service accounts and roles"
+for sa in vaanisetu-fn:"VaaniSetu function" vaanisetu-gateway:"VaaniSetu API Gateway" vaanisetu-build:"VaaniSetu function builds"; do
+  id=${sa%%:*}; name=${sa#*:}
+  gcloud iam service-accounts describe "$id@$PROJECT.iam.gserviceaccount.com" >/dev/null 2>&1 || \
+    gcloud iam service-accounts create "$id" --display-name="$name"
 done
-aws s3api put-bucket-cors --bucket $MEDIA --cors-configuration \
-  '{"CORSRules":[{"AllowedMethods":["PUT","GET"],"AllowedOrigins":["*"],"AllowedHeaders":["*"],"MaxAgeSeconds":3000}]}'
-aws s3api put-bucket-lifecycle-configuration --bucket $MEDIA --lifecycle-configuration \
-  '{"Rules":[{"ID":"expire-uploads","Status":"Enabled","Filter":{"Prefix":"uploads/"},"Expiration":{"Days":30}}]}'
+sleep 5
+for role in roles/datastore.user roles/aiplatform.user roles/serviceusage.serviceUsageConsumer roles/logging.logWriter; do
+  gcloud projects add-iam-policy-binding "$PROJECT" --member="serviceAccount:$FN_SA" --role="$role" \
+    --condition=None >/dev/null
+done
+for role in roles/storage.objectCreator roles/storage.objectViewer; do
+  gcloud storage buckets add-iam-policy-binding "gs://$MEDIA" --member="serviceAccount:$FN_SA" --role="$role" >/dev/null
+done
+gcloud projects add-iam-policy-binding "$PROJECT" --member="serviceAccount:$BUILD_SA" \n  --role=roles/cloudbuild.builds.builder --condition=None >/dev/null
+# lets the function sign Cloud Storage URLs with its own identity (IAM signBlob)
+gcloud iam service-accounts add-iam-policy-binding "$FN_SA" --member="serviceAccount:$FN_SA" \
+  --role=roles/iam.serviceAccountTokenCreator >/dev/null
 
-echo "== DynamoDB"
-if ! aws dynamodb describe-table --table-name $TABLE >/dev/null 2>&1; then
-  aws dynamodb create-table --table-name $TABLE --billing-mode PAY_PER_REQUEST \
-    --attribute-definitions AttributeName=pk,AttributeType=S AttributeName=createdAt,AttributeType=N \
-    --key-schema AttributeName=pk,KeyType=HASH AttributeName=createdAt,KeyType=RANGE >/dev/null
-  aws dynamodb wait table-exists --table-name $TABLE
-fi
+# ------------------------------------------------------------------ Gemini model
+echo "== Picking a Gemini model available to this project"
+TOKEN=$(gcloud auth print-access-token)
+MODEL_ID=""
+for m in ${MODEL_ID_OVERRIDE:-gemini-3.8-flash gemini-3.7-flash gemini-3.6-flash gemini-3.5-flash gemini-3-flash gemini-2.5-flash}; do
+  code=$(curl -s -o "$TMP/probe.json" -w '%{http_code}' -X POST \
+    -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+    "https://aiplatform.googleapis.com/v1/projects/$PROJECT/locations/global/publishers/google/models/$m:generateContent" \
+    -d '{"contents":[{"role":"user","parts":[{"text":"Reply with OK"}]}],"generationConfig":{"maxOutputTokens":8}}')
+  if [ "$code" = "200" ]; then MODEL_ID=$m; break; fi
+  echo "   $m -> HTTP $code"
+done
+[ -n "$MODEL_ID" ] || { echo "No Gemini model reachable"; cat "$TMP/probe.json"; exit 1; }
+echo "   using $MODEL_ID"
 
-echo "== IAM role"
-if ! aws iam get-role --role-name $ROLE >/dev/null 2>&1; then
-  aws iam create-role --role-name $ROLE --description "VaaniSetu Lambda execution role" \
-    --assume-role-policy-document \
-    '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"lambda.amazonaws.com"},"Action":"sts:AssumeRole"}]}' >/dev/null
-  sleep 10
-fi
-aws iam attach-role-policy --role-name $ROLE --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-sed -e "s/__MEDIA__/$MEDIA/g" -e "s/__ACCOUNT__/$ACCOUNT/g" -e "s/__TABLE__/$TABLE/g" \
-  "$HERE/lambda-policy.json" > "$TMP/policy.json"
-aws iam put-role-policy --role-name $ROLE --policy-name vaanisetu-least-privilege \
-  --policy-document "file://$TMP/policy.json"
-ROLE_ARN=$(aws iam get-role --role-name $ROLE --query Role.Arn --output text)
+# ------------------------------------------------------------------ Cloud Run function
+echo "== Cloud Run function"
+gcloud functions deploy "$FN" --gen2 --region="$REGION" --runtime=python312 \
+  --source="$ROOT/backend" --entry-point=api --trigger-http --no-allow-unauthenticated \
+  --service-account="$FN_SA" --build-service-account="projects/$PROJECT/serviceAccounts/$BUILD_SA" --memory=512Mi --timeout=60s --min-instances=0 --max-instances=3 \
+  --set-env-vars="MEDIA_BUCKET=$MEDIA,MODEL_ID=$MODEL_ID,MODEL_LOCATION=global" --quiet
+FN_URL=$(gcloud functions describe "$FN" --gen2 --region="$REGION" --format='value(serviceConfig.uri)')
+gcloud functions add-invoker-policy-binding "$FN" --gen2 --region="$REGION" \
+  --member="serviceAccount:$GW_SA" >/dev/null
 
-echo "== Lambda"
-(cd "$HERE/../backend" && python -c "import zipfile;z=zipfile.ZipFile('function.zip','w');z.write('lambda_function.py');z.close()")
-ZIP="fileb://$HERE/../backend/function.zip"
-ENVV="Variables={MEDIA_BUCKET=$MEDIA,TABLE_NAME=$TABLE,MODEL_ID=global.amazon.nova-2-lite-v1:0}"
-if aws lambda get-function --function-name $FN >/dev/null 2>&1; then
-  aws lambda update-function-code --function-name $FN --zip-file "$ZIP" >/dev/null
-  aws lambda wait function-updated --function-name $FN
-  aws lambda update-function-configuration --function-name $FN --environment "$ENVV" >/dev/null
+# ------------------------------------------------------------------ API Gateway
+echo "== API Gateway"
+sed "s#__FUNCTION_URL__#$FN_URL#" "$HERE/openapi.template.yaml" > "$TMP/openapi.yaml"
+gcloud api-gateway apis describe vaanisetu-api >/dev/null 2>&1 || gcloud api-gateway apis create vaanisetu-api
+CONFIG=vaanisetu-config-$(date +%Y%m%d%H%M%S)
+gcloud api-gateway api-configs create "$CONFIG" --api=vaanisetu-api \
+  --openapi-spec="$TMP/openapi.yaml" --backend-auth-service-account="$GW_SA"
+if gcloud api-gateway gateways describe vaanisetu-gateway --location="$GW_REGION" >/dev/null 2>&1; then
+  gcloud api-gateway gateways update vaanisetu-gateway --api=vaanisetu-api --api-config="$CONFIG" --location="$GW_REGION"
 else
-  for i in 1 2 3 4 5; do
-    aws lambda create-function --function-name $FN --runtime python3.12 \
-      --handler lambda_function.lambda_handler --role "$ROLE_ARN" --timeout 29 --memory-size 512 \
-      --architectures arm64 --description "VaaniSetu AI document reader API" \
-      --environment "$ENVV" --zip-file "$ZIP" >/dev/null && break || sleep 8
-  done
+  gcloud api-gateway gateways create vaanisetu-gateway --api=vaanisetu-api --api-config="$CONFIG" --location="$GW_REGION"
 fi
-aws lambda wait function-active --function-name $FN
-aws lambda wait function-updated --function-name $FN
-FN_ARN=$(aws lambda get-function --function-name $FN --query Configuration.FunctionArn --output text)
-
-echo "== API Gateway (HTTP API)"
-API_ID=$(aws apigatewayv2 get-apis --query "Items[?Name=='vaanisetu-api'].ApiId" --output text)
-if [ -z "$API_ID" ] || [ "$API_ID" = "None" ]; then
-  API_ID=$(aws apigatewayv2 create-api --name vaanisetu-api --protocol-type HTTP \
-    --cors-configuration 'AllowOrigins=*,AllowMethods=GET,POST,OPTIONS,AllowHeaders=content-type' \
-    --query ApiId --output text)
-  INT=$(aws apigatewayv2 create-integration --api-id $API_ID --integration-type AWS_PROXY \
-    --integration-uri "$FN_ARN" --payload-format-version 2.0 --timeout-in-millis 29000 \
-    --query IntegrationId --output text)
-  for r in "POST /upload-url" "POST /process" "GET /history"; do
-    aws apigatewayv2 create-route --api-id $API_ID --route-key "$r" --target "integrations/$INT" >/dev/null
-  done
-  aws apigatewayv2 create-stage --api-id $API_ID --stage-name '$default' --auto-deploy \
-    --default-route-settings ThrottlingBurstLimit=20,ThrottlingRateLimit=10 >/dev/null
-  aws lambda add-permission --function-name $FN --statement-id apigw-invoke \
-    --action lambda:InvokeFunction --principal apigateway.amazonaws.com \
-    --source-arn "arn:aws:execute-api:$AWS_REGION:$ACCOUNT:$API_ID/*" >/dev/null
-fi
-API_URL="https://$API_ID.execute-api.$AWS_REGION.amazonaws.com"
+API_URL="https://$(gcloud api-gateway gateways describe vaanisetu-gateway --location="$GW_REGION" --format='value(defaultHostname)')"
 echo "API: $API_URL"
 
-echo "== Frontend -> AWS Amplify Hosting"
-sed "s#__API_URL__#$API_URL#" "$HERE/../frontend/config.template.js" > "$HERE/../frontend/config.js"
-(cd "$HERE/../frontend" && python -c "
-import zipfile, pathlib
-with zipfile.ZipFile('../infra/.build/site.zip', 'w', zipfile.ZIP_DEFLATED) as z:
-    for f in pathlib.Path('.').rglob('*'):
-        if f.is_file() and f.name != 'config.template.js':
-            z.write(f, f.as_posix())")
-APP_ID=$(aws amplify list-apps --query "apps[?name=='vaanisetu'].appId | [0]" --output text)
-if [ -z "$APP_ID" ] || [ "$APP_ID" = "None" ]; then
-  APP_ID=$(aws amplify create-app --name vaanisetu --platform WEB --query app.appId --output text)
+# ------------------------------------------------------------------ frontend
+echo "== Frontend -> Cloud Storage static hosting"
+gcloud storage buckets describe "gs://$WEB" >/dev/null 2>&1 || gcloud storage buckets create "gs://$WEB" \
+  --location="$REGION" --uniform-bucket-level-access
+gcloud storage buckets update "gs://$WEB" --web-main-page-suffix=index.html >/dev/null
+gcloud storage buckets add-iam-policy-binding "gs://$WEB" --member=allUsers --role=roles/storage.objectViewer >/dev/null
+sed "s#__API_URL__#$API_URL#" "$ROOT/frontend/config.template.js" > "$ROOT/frontend/config.js"
+gcloud storage rsync "$ROOT/frontend" "gs://$WEB" --recursive --delete-unmatched-destination-objects \
+  --exclude='config\.template\.js$' --cache-control="public, max-age=60"
+
+# ------------------------------------------------------------------ budget guard
+BILLING=$(gcloud billing projects describe "$PROJECT" --format='value(billingAccountName)' | sed 's#billingAccounts/##')
+if ! gcloud billing budgets list --billing-account="$BILLING" --format='value(displayName)' 2>/dev/null | grep -qx vaanisetu; then
+  gcloud billing budgets create --billing-account="$BILLING" --display-name=vaanisetu \
+    --budget-amount=5USD --filter-projects="projects/$PROJECT" \
+    --threshold-rule=percent=0.5 --threshold-rule=percent=0.9 --threshold-rule=percent=1.0 >/dev/null \
+    && echo "== Budget alert set at US\$5" || echo "== (budget alert skipped)"
 fi
-if ! aws amplify get-branch --app-id $APP_ID --branch-name main >/dev/null 2>&1; then
-  aws amplify create-branch --app-id $APP_ID --branch-name main --stage PRODUCTION >/dev/null
-fi
-for j in $(aws amplify list-jobs --app-id $APP_ID --branch-name main \
-    --query "jobSummaries[?status=='PENDING'].jobId" --output text); do
-  aws amplify stop-job --app-id $APP_ID --branch-name main --job-id $j >/dev/null
-done
-DEPLOY=$(aws amplify create-deployment --app-id $APP_ID --branch-name main \
-  --query '[jobId,zipUploadUrl]' --output text | tr -d '\r')
-JOB_ID=$(echo "$DEPLOY" | cut -f1)
-UPLOAD_URL=$(echo "$DEPLOY" | cut -f2)
-curl -sS --fail-with-body -X PUT -H "Content-Type: application/zip" \
-  --data-binary "@$TMP/site.zip" "$UPLOAD_URL"
-aws amplify start-deployment --app-id $APP_ID --branch-name main --job-id $JOB_ID >/dev/null
-for i in $(seq 1 30); do
-  STATUS=$(aws amplify get-job --app-id $APP_ID --branch-name main --job-id $JOB_ID \
-    --query job.summary.status --output text | tr -d '\r')
-  if [ "$STATUS" = "SUCCEED" ] || [ "$STATUS" = "FAILED" ]; then break; fi
-  sleep 4
-done
-echo "Deployment: $STATUS"
-echo "Site: https://main.$(aws amplify get-app --app-id $APP_ID --query app.defaultDomain --output text)"
+
+echo
+echo "Project: $PROJECT ($PROJECT_NUMBER)"
+echo "API:     $API_URL"
+echo "Site:    https://storage.googleapis.com/$WEB/index.html"
