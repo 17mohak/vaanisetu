@@ -180,13 +180,20 @@ Never invent information that is not in the document."""
 
 
 def analyse_with_gemini(image_bytes, mime, lang):
-    response = gemini.models.generate_content(
-        model=MODEL_ID,
-        contents=[types.Part.from_bytes(data=image_bytes, mime_type=mime),
-                  PROMPT.replace("{language}", LANGUAGES[lang]["name"])],
-        config=types.GenerateContentConfig(temperature=0.2, max_output_tokens=4096,
-                                           response_mime_type="application/json"),
-    )
+    contents = [types.Part.from_bytes(data=image_bytes, mime_type=mime),
+                PROMPT.replace("{language}", LANGUAGES[lang]["name"])]
+    base = dict(temperature=0.2, max_output_tokens=4096, response_mime_type="application/json")
+    try:
+        # Minimal thinking: transcription and summarising need no long reasoning, and
+        # thinking tokens add latency and are billed as output tokens.
+        response = gemini.models.generate_content(
+            model=MODEL_ID, contents=contents,
+            config=types.GenerateContentConfig(
+                **base, thinking_config=types.ThinkingConfig(thinking_level="minimal")))
+    except Exception as e:  # model does not accept this thinking level
+        print("Gemini thinking_level fallback", repr(e))
+        response = gemini.models.generate_content(
+            model=MODEL_ID, contents=contents, config=types.GenerateContentConfig(**base))
     text = response.text or ""
     match = re.search(r"\{.*\}", text, re.S)
     data = json.loads(match.group(0) if match else text)
