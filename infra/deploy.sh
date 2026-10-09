@@ -83,7 +83,9 @@ gcloud iam service-accounts add-iam-policy-binding "$FN_SA" --member="serviceAcc
 echo "== Picking a Gemini model available to this project"
 TOKEN=$(gcloud auth print-access-token)
 MODEL_ID=""
-for m in ${MODEL_ID_OVERRIDE:-gemini-3.8-flash gemini-3.7-flash gemini-3.6-flash gemini-3.5-flash gemini-3-flash gemini-2.5-flash}; do
+# Flash-Lite first: in infra/bench_models.sh it was ~4x faster than Flash on this task
+# with valid output, and it is the cheapest model.
+for m in ${MODEL_ID_OVERRIDE:-gemini-3.5-flash-lite gemini-3.1-flash-lite gemini-3.5-flash gemini-2.5-flash-lite gemini-2.5-flash}; do
   code=$(curl -s -o "$TMP/probe.json" -w '%{http_code}' -X POST \
     -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
     "https://aiplatform.googleapis.com/v1/projects/$PROJECT/locations/global/publishers/google/models/$m:generateContent" \

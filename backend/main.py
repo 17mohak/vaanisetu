@@ -25,7 +25,7 @@ from google.genai import types
 PROJECT = os.environ.get("GOOGLE_CLOUD_PROJECT") or google.auth.default()[1]
 BUCKET = os.environ["MEDIA_BUCKET"]
 COLLECTION = os.environ.get("COLLECTION", "documents")
-MODEL_ID = os.environ.get("MODEL_ID", "gemini-2.5-flash")
+MODEL_ID = os.environ.get("MODEL_ID", "gemini-3.5-flash-lite")
 MODEL_LOCATION = os.environ.get("MODEL_LOCATION", "global")
 
 credentials, _ = google.auth.default()
