@@ -73,7 +73,8 @@ done
 for role in roles/storage.objectCreator roles/storage.objectViewer; do
   gcloud storage buckets add-iam-policy-binding "gs://$MEDIA" --member="serviceAccount:$FN_SA" --role="$role" >/dev/null
 done
-gcloud projects add-iam-policy-binding "$PROJECT" --member="serviceAccount:$BUILD_SA" \n  --role=roles/cloudbuild.builds.builder --condition=None >/dev/null
+gcloud projects add-iam-policy-binding "$PROJECT" --member="serviceAccount:$BUILD_SA" \
+  --role=roles/cloudbuild.builds.builder --condition=None >/dev/null
 # lets the function sign Cloud Storage URLs with its own identity (IAM signBlob)
 gcloud iam service-accounts add-iam-policy-binding "$FN_SA" --member="serviceAccount:$FN_SA" \
   --role=roles/iam.serviceAccountTokenCreator >/dev/null
