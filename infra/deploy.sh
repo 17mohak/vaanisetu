@@ -132,10 +132,13 @@ gcloud storage rsync "$ROOT/frontend" "gs://$WEB" --recursive --delete-unmatched
 # ------------------------------------------------------------------ budget guard
 BILLING=$(gcloud billing projects describe "$PROJECT" --format='value(billingAccountName)' | sed 's#billingAccounts/##')
 if ! gcloud billing budgets list --billing-account="$BILLING" --format='value(displayName)' 2>/dev/null | grep -qx vaanisetu; then
+  # budgets must use the billing account's own currency (INR for Indian accounts)
+  CURRENCY=$(gcloud billing accounts describe "$BILLING" --format='value(currencyCode)')
+  if [ "$CURRENCY" = "INR" ]; then AMOUNT=400INR; else AMOUNT=5${CURRENCY:-USD}; fi
   gcloud billing budgets create --billing-account="$BILLING" --display-name=vaanisetu \
-    --budget-amount=5USD --filter-projects="projects/$PROJECT" \
+    --budget-amount="$AMOUNT" --filter-projects="projects/$PROJECT" \
     --threshold-rule=percent=0.5 --threshold-rule=percent=0.9 --threshold-rule=percent=1.0 >/dev/null \
-    && echo "== Budget alert set at US\$5" || echo "== (budget alert skipped)"
+    && echo "== Budget alert set at $AMOUNT" || echo "== (budget alert skipped)"
 fi
 
 echo
