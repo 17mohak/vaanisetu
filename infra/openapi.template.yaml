@@ -1,0 +1,46 @@
+# Google Cloud API Gateway config for VaaniSetu (OpenAPI 2.0).
+# __FUNCTION_URL__ is replaced by deploy.sh with the Cloud Run function URL.
+swagger: "2.0"
+info:
+  title: vaanisetu-api
+  description: VaaniSetu AI document reader API
+  version: "1.0.0"
+schemes:
+  - https
+produces:
+  - application/json
+x-google-backend:
+  address: __FUNCTION_URL__
+  path_translation: APPEND_PATH_TO_ADDRESS
+  deadline: 60.0
+paths:
+  /upload-url:
+    post:
+      operationId: uploadUrl
+      summary: Get a signed Cloud Storage upload URL
+      responses:
+        "200": { description: Signed URL issued }
+    options:
+      operationId: uploadUrlCors
+      responses:
+        "204": { description: CORS preflight }
+  /process:
+    post:
+      operationId: process
+      summary: Run Vision, Gemini and Text-to-Speech on an uploaded photo
+      responses:
+        "200": { description: Document processed }
+    options:
+      operationId: processCors
+      responses:
+        "204": { description: CORS preflight }
+  /history:
+    get:
+      operationId: history
+      summary: Latest processed documents
+      responses:
+        "200": { description: History items }
+    options:
+      operationId: historyCors
+      responses:
+        "204": { description: CORS preflight }
