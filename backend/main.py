@@ -184,14 +184,14 @@ def analyse_with_gemini(image_bytes, mime, lang):
                 PROMPT.replace("{language}", LANGUAGES[lang]["name"])]
     base = dict(temperature=0.2, max_output_tokens=4096, response_mime_type="application/json")
     try:
-        # Minimal thinking: transcription and summarising need no long reasoning, and
+        # Thinking off: transcription and summarising need no long reasoning, and
         # thinking tokens add latency and are billed as output tokens.
         response = gemini.models.generate_content(
             model=MODEL_ID, contents=contents,
             config=types.GenerateContentConfig(
-                **base, thinking_config=types.ThinkingConfig(thinking_level="minimal")))
-    except Exception as e:  # model does not accept this thinking level
-        print("Gemini thinking_level fallback", repr(e))
+                **base, thinking_config=types.ThinkingConfig(thinking_budget=0)))
+    except Exception as e:  # model does not allow turning thinking off
+        print("Gemini thinking_budget fallback", repr(e))
         response = gemini.models.generate_content(
             model=MODEL_ID, contents=contents, config=types.GenerateContentConfig(**base))
     text = response.text or ""
