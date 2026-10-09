@@ -64,11 +64,11 @@
 
       <div class="panel output-panel" aria-live="polite">
         <ol class="pipeline" id="pipeline">
-          <li data-step="upload"><b>Amazon S3</b><span>Secure upload</span></li>
-          <li data-step="rekognition"><b>Rekognition</b><span>Text check</span></li>
-          <li data-step="bedrock"><b>Bedrock · Nova</b><span>Understand &amp; translate</span></li>
-          <li data-step="polly"><b>Polly</b><span>Neural speech</span></li>
-          <li data-step="dynamo"><b>DynamoDB</b><span>Saved</span></li>
+          <li data-step="upload"><b>Cloud Storage</b><span>Secure upload</span></li>
+          <li data-step="vision"><b>Cloud Vision</b><span>Text check</span></li>
+          <li data-step="gemini"><b>Vertex AI · Gemini</b><span>Understand &amp; translate</span></li>
+          <li data-step="tts"><b>Text-to-Speech</b><span>Neural speech</span></li>
+          <li data-step="firestore"><b>Firestore</b><span>Saved</span></li>
         </ol>
 
         <div class="empty" id="empty">
@@ -106,18 +106,18 @@
     </section>
 
     <section id="how" class="wrap how" aria-labelledby="how-h">
-      <h2 id="how-h">How it works on AWS</h2>
+      <h2 id="how-h">How it works on Google Cloud</h2>
       <div class="steps">
-        <div><span>01</span><h3>Upload</h3><p>The browser gets a pre-signed URL from <b>API Gateway → Lambda</b> and uploads the photo straight to a private <b>S3</b> bucket.</p></div>
-        <div><span>02</span><h3>Verify</h3><p><b>Amazon Rekognition</b> checks the photo really contains printed text before any AI cost is spent.</p></div>
-        <div><span>03</span><h3>Understand</h3><p><b>Amazon Nova on Bedrock</b> transcribes the page, works out what it means and writes a plain explanation in your language.</p></div>
-        <div><span>04</span><h3>Speak</h3><p><b>Amazon Polly</b> neural voices turn the explanation into natural speech, stored in S3 and logged in <b>DynamoDB</b>.</p></div>
+        <div><span>01</span><h3>Upload</h3><p>The browser gets a signed URL from <b>API Gateway → Cloud Run functions</b> and uploads the photo straight to a private <b>Cloud Storage</b> bucket.</p></div>
+        <div><span>02</span><h3>Verify</h3><p><b>Cloud Vision</b> checks the photo really contains printed text before any AI cost is spent.</p></div>
+        <div><span>03</span><h3>Understand</h3><p><b>Gemini on Vertex AI</b> transcribes the page, works out what it means and writes a plain explanation in your language.</p></div>
+        <div><span>04</span><h3>Speak</h3><p><b>Cloud Text-to-Speech</b> neural voices turn the explanation into natural speech, stored in Cloud Storage and logged in <b>Firestore</b>.</p></div>
       </div>
     </section>
   </main>
 
   <footer class="wrap footer">
-    <p>VaaniSetu · Cloud Application Development (CAP 303) mini-project · Served by Amazon CloudFront from Amazon S3</p>
+    <p>VaaniSetu · Cloud Application Development (CAP 303) mini-project · Hosted on Google Cloud Storage</p>
   </footer>
 
   <script src="config.js"></script>

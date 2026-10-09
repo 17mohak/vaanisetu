@@ -1,4 +1,4 @@
-// VaaniSetu front-end: talks to Amazon API Gateway, uploads directly to Amazon S3
+// VaaniSetu front-end: talks to Google Cloud API Gateway, uploads directly to Cloud Storage
 const API = window.VAANI_CONFIG.apiUrl;
 const LANGS = [
   ["en", "English"], ["hi", "हिन्दी", "Hindi"], ["es", "Español"], ["fr", "Français"],
@@ -69,7 +69,7 @@ function downscale(file, maxSide) {
 }
 
 // ---------- pipeline
-const STEPS = ["upload", "rekognition", "bedrock", "polly", "dynamo"];
+const STEPS = ["upload", "vision", "gemini", "tts", "firestore"];
 function setStep(active) {
   const idx = STEPS.indexOf(active);
   document.querySelectorAll("#pipeline li").forEach((li) => {
@@ -92,11 +92,11 @@ $("go").addEventListener("click", async () => {
     setStep("upload");
     const up = await api("/upload-url", { contentType: "image/jpeg" });
     const put = await fetch(up.uploadUrl, { method: "PUT", headers: { "Content-Type": "image/jpeg" }, body: imageBlob });
-    if (!put.ok) throw new Error("Upload to S3 failed");
+    if (!put.ok) throw new Error("Upload to Cloud Storage failed");
 
     // The server runs the remaining stages in one call; animate them while we wait.
-    setStep("rekognition");
-    ticker = [setTimeout(() => setStep("bedrock"), 1200), setTimeout(() => setStep("polly"), 9000)];
+    setStep("vision");
+    ticker = [setTimeout(() => setStep("gemini"), 1200), setTimeout(() => setStep("tts"), 9000)];
     const result = await api("/process", { key: up.key, language: selectedLang });
     ticker.forEach(clearTimeout);
     setStep("all");
@@ -137,7 +137,7 @@ function showResult(r, autoplay) {
   $("rText").textContent = r.extractedText;
   const t = r.timings || {};
   $("rTimings").innerHTML = "";
-  [["Rekognition", t.rekognition], ["Bedrock", t.bedrock], ["Polly", t.polly], ["OCR lines", r.ocrLines, ""], ["OCR confidence", r.ocrConfidence, "%"]]
+  [["Vision", t.vision], ["Gemini", t.gemini], ["Text-to-Speech", t.tts], ["OCR lines", r.ocrLines, ""], ["OCR confidence", r.ocrConfidence, "%"]]
     .forEach(([k, v, unit = "s"]) => {
       if (v === undefined) return;
       const span = document.createElement("span");
