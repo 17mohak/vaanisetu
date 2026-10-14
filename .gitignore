@@ -6,3 +6,4 @@ frontend/config.js
 __pycache__/
 *.pyc
 report/.frontpages.docx
+node_modules/
