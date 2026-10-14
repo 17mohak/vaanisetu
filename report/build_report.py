@@ -19,11 +19,11 @@ from docx.shared import Cm, Pt, RGBColor
 
 ROOT = Path(__file__).resolve().parent.parent
 SHOTS = ROOT / "report" / "screenshots"
-TITLE = ("VaaniSetu: An AI-Powered Multilingual Document Reader using Amazon Bedrock, "
-         "Amazon Polly, Amazon Rekognition and AWS Lambda")
+TITLE = ("VaaniSetu: An AI-Powered Multilingual Document Reader using Vertex AI Gemini, "
+         "Cloud Vision, Cloud Text-to-Speech and Cloud Run")
 OLD_TITLE = "Employee Management System using AWS Elastic Beanstalk and AWS SQL Server"
 FONT = "Times New Roman"
-APP_URL = "https://main.dubqxztshiysh.amplifyapp.com"
+APP_URL = "https://storage.googleapis.com/vaanisetu-web-project-2acd026b-3237-497d-89d/index.html"
 REPO_URL = "https://github.com/17mohak/vaanisetu"
 STUDENTS = [("Mohak Mandwani", "2406506")]
 
@@ -304,53 +304,57 @@ def build(template, output):
               "before a deadline.")
     heading(doc, "1.1", "Objectives", level=2)
     bullets(doc, [
-        "Build a fully serverless web application on AWS that needs no servers to manage.",
-        "Combine at least three cloud services: this project integrates **eight core AWS services** "
-        "(S3, Lambda, API Gateway, Rekognition, Bedrock, Polly, DynamoDB, Amplify) plus IAM and "
-        "CloudWatch.",
-        "Use generative AI (Amazon Nova on Amazon Bedrock) to read and explain documents in seven "
-        "languages, and neural text-to-speech (Amazon Polly) to speak the explanation.",
-        "Keep the system secure (private storage, pre-signed URLs, least-privilege IAM) and "
-        "cost-efficient (pay-per-use, no idle cost).",
+        "Build a fully serverless web application on Google Cloud Platform (GCP) that needs no "
+        "servers to manage.",
+        "Combine at least three cloud services: this project integrates **eight core Google Cloud "
+        "services** (Cloud Storage, Cloud Run functions, API Gateway, Cloud Vision, Vertex AI, "
+        "Cloud Text-to-Speech, Firestore and Cloud Storage website hosting) plus IAM and Cloud Logging.",
+        "Use generative AI (Gemini on Vertex AI) to read and explain documents in seven languages, "
+        "and neural text-to-speech (Cloud Text-to-Speech) to speak the explanation.",
+        "Keep the system secure (private storage, signed URLs, least-privilege service accounts) and "
+        "cost-efficient (pay-per-use, scale to zero, no idle cost).",
     ])
     heading(doc, "1.2", "Key Features", level=2)
     bullets(doc, [
-        "**Photo to speech in about 10 seconds**: upload or capture a document photo and hear it explained.",
+        "**Photo to speech in about 11 seconds**: upload or capture a document photo and hear it explained.",
         "**Seven output languages**: English, Hindi, Spanish, French, German, Japanese and Arabic, each "
-        "with a natural Amazon Polly neural voice. The source document can be in any language "
+        "with a natural neural voice. The source document can be in any language "
         "(for example, a Hindi bill explained in English).",
         "**Structured understanding**: document type, title, plain-language summary, key points and "
         "action items with deadlines, plus the full transcribed text.",
-        "**Smart gatekeeping**: Amazon Rekognition checks that the photo really contains text before "
-        "the more expensive AI model is called.",
-        "**History**: every processed document is stored in DynamoDB and can be replayed.",
+        "**Smart gatekeeping**: Cloud Vision checks that the photo really contains text before "
+        "the Gemini model is called.",
+        "**History**: every processed document is stored in Firestore and can be replayed.",
         "**Accessible design**: large type, high contrast, keyboard navigation and a live progress "
-        "tracker that shows each AWS service as it runs.",
+        "tracker that shows each Google Cloud service as it runs.",
     ])
 
     # 2 Block diagram -------------------------------------------------------
     page_break(doc)
     heading(doc, "2.", "Block Diagram")
-    para(doc, "Figure 2.1 shows the architecture of VaaniSetu. All components run in the AWS "
-              "Asia Pacific (Mumbai) region, ap-south-1.")
-    figure(doc, ROOT / "report" / "block-diagram.png", "Figure 2.1: System block diagram of VaaniSetu on AWS")
+    para(doc, "Figure 2.1 shows the architecture of VaaniSetu. All components run in the Google Cloud "
+              "Mumbai region (asia-south1), except API Gateway, which is not offered in Mumbai and "
+              "runs in the nearest supported region, Tokyo (asia-northeast1).")
+    figure(doc, ROOT / "report" / "block-diagram.png",
+           "Figure 2.1: System block diagram of VaaniSetu on Google Cloud")
     heading(doc, "2.1", "Workflow", level=2)
     numbered(doc, [
-        "The user opens the web application, which is served over HTTPS by **AWS Amplify Hosting**.",
-        "The browser resizes the photo and calls **POST /upload-url** on **Amazon API Gateway**. "
-        "**AWS Lambda** returns a short-lived pre-signed URL.",
-        "The browser uploads the photo **directly to a private Amazon S3 bucket** using that URL, so "
-        "large files never pass through the API.",
-        "The browser calls **POST /process**. Lambda asks **Amazon Rekognition** (DetectText) whether "
+        "The user opens the web application, a static website served over HTTPS from **Cloud Storage**.",
+        "The browser resizes the photo and calls **POST /upload-url** on **Google Cloud API Gateway**. "
+        "The **Cloud Run function** returns a short-lived V4 signed URL.",
+        "The browser uploads the photo **directly to a private Cloud Storage bucket** using that URL, "
+        "so large files never pass through the API.",
+        "The browser calls **POST /process**. The function asks **Cloud Vision** (text detection) whether "
         "the image contains readable text. Photos without text are rejected at this point.",
-        "Lambda sends the image to **Amazon Nova 2 Lite on Amazon Bedrock**, which transcribes the "
+        "The function sends the image to **Gemini 3.5 Flash-Lite on Vertex AI**, which transcribes the "
         "document and returns JSON: document type, title, a spoken summary in the chosen language, "
         "key points and action items.",
-        "**Amazon Polly** converts the summary to speech with a neural voice. The MP3 file is saved to S3.",
-        "The result is stored in **Amazon DynamoDB** and returned to the browser with pre-signed "
-        "links to the image and audio, and the audio plays automatically.",
-        "**AWS IAM** limits the Lambda function to exactly these actions, and **Amazon CloudWatch** "
-        "records logs and metrics for every request.",
+        "**Cloud Text-to-Speech** converts the summary to speech with a neural voice. The MP3 file is "
+        "saved to Cloud Storage.",
+        "The result is stored in **Firestore** and returned to the browser with signed links to the "
+        "image and audio, and the audio plays automatically.",
+        "**IAM service accounts** limit each component to exactly the roles it needs, and **Cloud "
+        "Logging** records every request.",
     ])
 
     # 3 Technologies --------------------------------------------------------
@@ -358,8 +362,10 @@ def build(template, output):
     heading(doc, "3.", "Technologies Used")
     heading(doc, "3.1", "Development Technologies", level=2)
     table(doc, ["Technology", "Purpose in VaaniSetu"], [
-        ["Python 3.12", "Backend business logic running on AWS Lambda (arm64 / Graviton)."],
-        ["Boto3 (AWS SDK for Python)", "Calls S3, Rekognition, Bedrock (Converse API), Polly and DynamoDB from Lambda."],
+        ["Python 3.12", "Backend business logic running as a Cloud Run function (gen2)."],
+        ["Google Cloud client libraries", "google-cloud-storage, -vision, -texttospeech and -firestore, "
+                                          "plus google-genai for Gemini on Vertex AI."],
+        ["Functions Framework", "Exposes the Python handler as an HTTP endpoint on Cloud Run."],
         ["HTML5", "Page structure: upload area, language selector, results, history and "
                   "\"how it works\" sections, with semantic, accessible markup."],
         ["CSS3", "Styling: responsive grid layout, custom design tokens, animated pipeline "
@@ -367,81 +373,93 @@ def build(template, output):
         ["JavaScript (ES2020)", "Dynamic features: drag-and-drop and camera upload, in-browser image "
                                 "resizing (Canvas API), Fetch API calls, live pipeline status, audio "
                                 "playback and history cards."],
-        ["JSON", "Data format between browser, API and AI model, and for IAM policies."],
-        ["AWS CLI and Bash", "Infrastructure provisioning and repeatable deployment (infra/deploy.sh)."],
+        ["JSON and OpenAPI 2.0", "Data format between browser, API and AI model; API Gateway configuration."],
+        ["gcloud CLI and Bash", "Repeatable provisioning and deployment from Cloud Shell (infra/deploy.sh)."],
         ["Git and GitHub", "Version control with small, atomic commits."],
     ], widths=[4.5, 10.5])
 
     heading(doc, "3.2", "Cloud Services (Deployment)", level=2)
-    para(doc, "The following AWS services are used. All of them are serverless or fully managed, "
-              "so the application has no servers to patch and costs nothing while idle.")
-    table(doc, ["AWS Service", "Role in VaaniSetu", "Configuration"], [
-        ["Amazon S3", "Stores uploaded document photos (uploads/) and generated speech (audio/).",
-         "Private bucket, public access blocked, SSE-S3 encryption, CORS for browser upload, "
-         "30-day lifecycle on uploads, pre-signed URLs."],
-        ["AWS Lambda", "Serverless backend that runs the whole AI pipeline.",
-         "vaanisetu-api, Python 3.12, arm64, 512 MB, 29 s timeout."],
-        ["Amazon API Gateway", "Public REST entry point for the web app.",
-         "HTTP API with routes POST /upload-url, POST /process, GET /history; CORS; throttling "
-         "at 10 req/s (burst 20)."],
-        ["Amazon Bedrock", "Generative AI that reads, understands, simplifies and translates the document.",
-         "Model: Amazon Nova 2 Lite (multimodal) via the global cross-region inference profile, "
-         "Converse API, temperature 0.2."],
-        ["Amazon Rekognition", "Computer-vision gate: detects printed text before calling the AI model.",
-         "DetectText API reading the image directly from S3; at least 2 text lines required."],
-        ["Amazon Polly", "Neural text-to-speech for the explanation.",
-         "Neural engine; voices Kajal (English-IN and Hindi), Lucia, Lea, Vicki, Kazuha and Hala; MP3 output."],
-        ["Amazon DynamoDB", "Stores the history of processed documents.",
-         "Table vaanisetu-documents, on-demand capacity, key pk + createdAt for newest-first queries."],
-        ["AWS Amplify Hosting", "Hosts the static frontend over HTTPS with a global CDN.",
-         "App vaanisetu, branch main, deployed from a zip by the deploy script."],
-        ["AWS IAM", "Security: grants Lambda only the permissions it needs.",
-         "Role vaanisetu-lambda-role with a least-privilege inline policy (see Section 4.4)."],
-        ["Amazon CloudWatch", "Monitoring: Lambda logs, errors and duration metrics.",
-         "Log group /aws/lambda/vaanisetu-api."],
+    para(doc, "The following Google Cloud services are used. All of them are serverless or fully "
+              "managed, so the application has no servers to patch and costs nothing while idle.")
+    table(doc, ["Google Cloud Service", "Role in VaaniSetu", "Configuration"], [
+        ["Cloud Storage", "Stores uploaded document photos (uploads/) and generated speech (audio/).",
+         "Private bucket in asia-south1, public access prevention enforced, uniform access, CORS for "
+         "browser upload, uploads deleted after 30 days, V4 signed URLs."],
+        ["Cloud Run functions", "Serverless backend that runs the whole AI pipeline.",
+         "vaanisetu-api (gen2), Python 3.12, 512 MB, 60 s timeout, 0 to 3 instances."],
+        ["API Gateway", "Public HTTPS entry point for the web app.",
+         "OpenAPI config with POST /upload-url, POST /process, GET /history and CORS; gateway in "
+         "asia-northeast1; calls the private function with its own service account."],
+        ["Vertex AI (Gemini)", "Generative AI that reads, understands, simplifies and translates the document.",
+         "Gemini 3.5 Flash-Lite (multimodal), global endpoint, JSON output, temperature 0.2, thinking off."],
+        ["Cloud Vision API", "Computer-vision gate: detects printed text before calling Gemini.",
+         "Document text detection reading the image directly from Cloud Storage; at least 2 lines required."],
+        ["Cloud Text-to-Speech", "Neural text-to-speech for the explanation.",
+         "Neural2 / WaveNet voices for en-IN, hi-IN, es-ES, fr-FR, de-DE, ja-JP and ar-XA; MP3 output."],
+        ["Firestore", "Stores the history of processed documents.",
+         "Native mode, asia-south1, free tier; collection documents ordered by createdAt."],
+        ["Cloud Storage website", "Hosts the static frontend over HTTPS.",
+         "Separate public-read bucket vaanisetu-web-<project> with index.html as main page."],
+        ["IAM", "Security: grants each component only the permissions it needs.",
+         "Service accounts vaanisetu-fn, vaanisetu-gateway and vaanisetu-build with least-privilege roles."],
+        ["Cloud Logging", "Monitoring: request logs, errors and latency.",
+         "Function logs and metrics; budget alert of 400 INR at 50%, 90% and 100%."],
     ], widths=[3.3, 5.6, 6.1], size=10)
+    # drop the spacer after this full-page table so it cannot spill onto a blank page
+    spacer = doc.paragraphs[-1]._p
+    spacer.getparent().remove(spacer)
 
     # 4 Code ----------------------------------------------------------------
-    page_break(doc)
-    heading(doc, "4.", "Code")
+    heading(doc, "4.", "Code").paragraph_format.page_break_before = True
     para(doc, "The complete source code is in the project repository (" + REPO_URL + "). It is "
-              "organised into backend/ (Lambda), frontend/ (web app), infra/ (deployment script, IAM "
-              "policy, sample generator) and report/. The most important parts are shown below.")
-    heading(doc, "4.1", "Lambda: request routing", level=2)
-    code(doc, excerpt("backend/lambda_function.py", "def lambda_handler", "# ------"),
-         "backend/lambda_function.py: lambda_handler")
-    heading(doc, "4.2", "Lambda: AI pipeline (Rekognition → Bedrock → Polly → DynamoDB)", level=2)
-    code(doc, excerpt("backend/lambda_function.py", "def process_document", "PROMPT = "),
-         "backend/lambda_function.py: process_document")
-    heading(doc, "4.3", "Lambda: Amazon Bedrock prompt and call", level=2)
-    code(doc, excerpt("backend/lambda_function.py", "PROMPT = ", "# ------"),
-         "backend/lambda_function.py: prompt and analyse_with_bedrock")
-    heading(doc, "4.4", "IAM least-privilege policy", level=2)
-    code(doc, (ROOT / "infra/lambda-policy.json").read_text(encoding="utf-8"), "infra/lambda-policy.json")
-    heading(doc, "4.5", "Frontend: upload and processing", level=2)
-    code(doc, excerpt("frontend/app.js", '$("go").addEventListener', "async function api"),
-         "frontend/app.js: direct-to-S3 upload and pipeline call")
+              "organised into backend/ (Cloud Run function), frontend/ (web app), infra/ (deployment "
+              "script, API Gateway config, sample generator) and report/. The most important parts are "
+              "shown below.")
+    heading(doc, "4.1", "Cloud Run function: request routing", level=2)
+    code(doc, excerpt("backend/main.py", "@functions_framework.http", "# ------"),
+         "backend/main.py: api")
+    heading(doc, "4.2", "AI pipeline (Vision → Gemini → Text-to-Speech → Firestore)", level=2)
+    code(doc, excerpt("backend/main.py", "def process_document", "PROMPT = "),
+         "backend/main.py: process_document")
+    heading(doc, "4.3", "Gemini prompt and Vertex AI call", level=2)
+    code(doc, excerpt("backend/main.py", "PROMPT = ", "def synthesize"),
+         "backend/main.py: prompt and analyse_with_gemini")
+    heading(doc, "4.4", "Signed Cloud Storage URLs", level=2)
+    code(doc, excerpt("backend/main.py", "def signed_url", "def create_upload_url"),
+         "backend/main.py: signed_url")
     page_break(doc)
-    heading(doc, "4.6", "Deployment script (excerpt)", level=2)
-    code(doc, excerpt("infra/deploy.sh", 'echo "== API Gateway', 'API_URL='),
-         "infra/deploy.sh: creating the HTTP API and wiring it to Lambda")
+    heading(doc, "4.5", "Least-privilege service accounts", level=2)
+    code(doc, excerpt("infra/deploy.sh", 'echo "== Service accounts and roles"',
+                      "# ------------------------------------------------------------------ Gemini model"),
+         "infra/deploy.sh: service accounts and roles")
+    heading(doc, "4.6", "API Gateway configuration (OpenAPI)", level=2)
+    code(doc, excerpt("infra/openapi.template.yaml", "swagger:", "  /process:"),
+         "infra/openapi.template.yaml (excerpt)")
+    page_break(doc)
+    heading(doc, "4.7", "Frontend: upload and processing", level=2)
+    code(doc, excerpt("frontend/app.js", '$("go").addEventListener', "async function api"),
+         "frontend/app.js: direct-to-Cloud-Storage upload and pipeline call")
 
     # 5 Screenshots ----------------------------------------------------------
     page_break(doc)
     heading(doc, "5.", "Screenshots")
     shots = [
-        ("01-home.jpg", "Figure 5.1: VaaniSetu home page (hosted on AWS Amplify)"),
+        ("01-home.jpg", "Figure 5.1: VaaniSetu home page (hosted on Cloud Storage)"),
         ("02-result-hindi-notice.jpg", "Figure 5.2: English college notice explained and spoken in Hindi; "
-                                        "the pipeline tracker shows every AWS service completed"),
+                                        "the pipeline tracker shows every Google Cloud service completed"),
         ("03-result-english-bill.jpg", "Figure 5.3: Hindi electricity bill explained in English, with key "
                                         "points, action items and per-service timings"),
-        ("04-history.jpg", "Figure 5.4: History of processed documents loaded from Amazon DynamoDB"),
-        ("05-lambda.jpg", "Figure 5.5: AWS Lambda function vaanisetu-api with its API Gateway trigger"),
-        ("06-api-gateway.jpg", "Figure 5.6: Amazon API Gateway HTTP API routes"),
-        ("07-s3-audio.jpg", "Figure 5.7: Amazon S3 bucket with MP3 files generated by Amazon Polly"),
-        ("08-dynamodb.jpg", "Figure 5.8: Amazon DynamoDB table vaanisetu-documents with stored results"),
-        ("09-amplify.jpg", "Figure 5.9: AWS Amplify Hosting app with the deployed main branch"),
-        ("10-cloudwatch.jpg", "Figure 5.10: Amazon CloudWatch log group for the Lambda function"),
+        ("04-result-spanish-prescription.jpg", "Figure 5.4: Prescription explained in Spanish with the "
+                                                "audio playing"),
+        ("05-history.jpg", "Figure 5.5: History of processed documents loaded from Firestore"),
+        ("06-cloud-run-function.jpg", "Figure 5.6: Cloud Run function vaanisetu-api with request metrics"),
+        ("07-api-gateway.jpg", "Figure 5.7: API Gateway vaanisetu-gateway (active, asia-northeast1)"),
+        ("08-cloud-storage-audio.jpg", "Figure 5.8: Cloud Storage bucket with MP3 files generated by "
+                                        "Cloud Text-to-Speech"),
+        ("09-firestore.jpg", "Figure 5.9: Firestore document with the stored result"),
+        ("10-iam-service-accounts.jpg", "Figure 5.10: Least-privilege IAM service accounts"),
+        ("11-cloud-logging.jpg", "Figure 5.11: Cloud Logging showing every API request with latency"),
+        ("12-budget-alert.jpg", "Figure 5.12: Budget alert of 400 INR (no credits used)"),
     ]
     for i, (f, cap) in enumerate(shots):
         figure(doc, SHOTS / f, cap, width_cm=15.0)
@@ -453,36 +471,39 @@ def build(template, output):
     heading(doc, "6.", "Conclusion")
     para(doc, "VaaniSetu shows how managed cloud services can be combined into a useful, "
               "socially relevant product with very little infrastructure code. A photo taken on a "
-              "phone becomes a clear spoken explanation in the user's own language in about ten "
-              "seconds. In testing, Amazon Rekognition took about 1 second, Amazon Bedrock (Nova 2 "
-              "Lite) about 4 seconds and Amazon Polly about 1.5 to 2 seconds per document.")
+              "phone becomes a clear spoken explanation in the user's own language in about eleven "
+              "seconds. In testing, Cloud Vision took about 1.5 seconds, Gemini 3.5 Flash-Lite about "
+              "3.5 seconds and Cloud Text-to-Speech about 2 seconds per document.")
     heading(doc, "6.1", "Outcomes", level=2)
     bullets(doc, [
-        "A fully serverless application on AWS integrating eight core services plus IAM and CloudWatch.",
+        "A fully serverless application on Google Cloud integrating eight core services plus IAM and "
+        "Cloud Logging.",
         "Documents in one language (for example Hindi) explained and spoken in another (for example English).",
-        "Security by design: private S3 buckets, short-lived pre-signed URLs, encryption at rest and a "
-        "least-privilege IAM role.",
-        "Pay-per-use cost: there are no running servers, so the application costs nothing when idle.",
+        "Security by design: private buckets, short-lived signed URLs, encryption at rest and "
+        "least-privilege service accounts.",
+        "Zero idle cost: the function scales to zero and there are no servers, so the application "
+        "costs nothing when nobody is using it. A budget alert guards against surprises.",
         "Infrastructure provisioned by a single repeatable script, with source code under version control.",
     ])
     heading(doc, "6.2", "Challenges and Learnings", level=2)
     bullets(doc, [
-        "The AWS Free-plan account did not allow Amazon Textract, Translate or Comprehend. The design "
-        "was changed to use a multimodal model on Amazon Bedrock, which reads, translates and "
-        "summarises in a single call.",
-        "Amazon CloudFront required account verification for new accounts, so the frontend was "
-        "hosted on AWS Amplify Hosting, which also provides HTTPS and a CDN.",
-        "Rekognition's text detection supports Latin script only. It is therefore used as a fast, low-cost "
-        "\"is there text?\" gate, while Bedrock performs the multilingual reading.",
-        "API Gateway limits requests to 29 seconds, so uploads go directly to S3 and the AI pipeline "
-        "was designed to finish in about 10 seconds.",
+        "The project was first built on AWS, but the AWS account was suspended. Because the "
+        "infrastructure was scripted, the whole system was rebuilt on Google Cloud service for "
+        "service; the AWS version remains in the Git history.",
+        "Gemini 3.8 Flash took 16 to 24 seconds per document. Benchmarking six Gemini models on the "
+        "real prompt showed that Gemini 3.5 Flash-Lite with thinking turned off answers in about "
+        "3.5 seconds with correct output, and it is also the cheapest.",
+        "API Gateway is not offered in Mumbai, so the gateway runs in Tokyo and routes to the "
+        "function in Mumbai.",
+        "Cloud Run functions have no private key for signing URLs, so the function signs Cloud "
+        "Storage URLs through the IAM signBlob API using its own service account.",
     ])
     heading(doc, "6.3", "Future Scope", level=2)
     bullets(doc, [
-        "Support multi-page PDFs using asynchronous processing with Amazon SQS or AWS Step Functions.",
-        "Add more Indian languages as Amazon Polly voices become available, and a voice question-"
-        "and-answer mode (\"When is my next dose?\").",
-        "User accounts with Amazon Cognito so that each user's history is private.",
+        "Support multi-page PDFs using asynchronous processing with Pub/Sub and Workflows.",
+        "Add more Indian languages (Marathi, Tamil, Bengali and others, which Cloud Text-to-Speech "
+        "already supports) and a voice question-and-answer mode (\"When is my next dose?\").",
+        "User accounts with Firebase Authentication so that each user's history is private.",
         "A WhatsApp or IVR channel so that users without smartphones can send a photo and receive a call back.",
     ])
     para(doc, "Live application: " + APP_URL, size=11, align=WD_ALIGN_PARAGRAPH.LEFT, space_after=2)
