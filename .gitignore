@@ -7,3 +7,5 @@ __pycache__/
 *.pyc
 report/.frontpages.docx
 node_modules/
+# Office lock files
+~$*
